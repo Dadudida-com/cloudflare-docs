@@ -12,10 +12,11 @@ Cloudflare Access allows you to securely publish internal tools and applications
 
 ## Prerequisites
 
-- [Add your domain](/fundamentals/setup/account-setup/add-site/) to Cloudflare.
+- [Add your domain](/fundamentals/setup/manage-domains/add-site/) to Cloudflare.
 - [Change your domain nameservers](/dns/zone-setups/full-setup/) to Cloudflare, or configure a [partial (`CNAME`) setup](/dns/zone-setups/partial-setup/).
 
 ## 1. Add your application to Access
+
 
 1. In [Zero Trust](https://one.dash.cloudflare.com), go to **Access** > **Applications**.
 
@@ -34,13 +35,11 @@ Cloudflare Access allows you to securely publish internal tools and applications
 
 7. (Optional) Configure [App Launcher settings](/cloudflare-one/applications/app-launcher/) for the application.
 
-8. {{<render file="_access-block-page.md">}}
+8. {{<render file="access/_access-block-page.md">}}
 
-9. In the **Identity Providers** card, select the identity providers you want to enable for your app.
+9. {{<render file="access/_access-choose-idps.md">}}
 
-10. (Optional) Turn on **Instant Auth** if you selected only one IdP and want users to skip the identity provider selection step.
-
-11. Select **Next**.
+10. Select **Next**.
 
 ## 2. Add an Access policy
 

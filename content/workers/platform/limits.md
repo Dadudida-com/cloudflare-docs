@@ -1,6 +1,7 @@
 ---
 pcx_content_type: concept
 title: Limits
+weight: 2
 meta:
   description: Cloudflare Workers plan and platform limits.
 ---
@@ -11,9 +12,9 @@ meta:
 
 {{<table-wrap>}}
 
-| Feature                                                                         | Workers Free      | Workers Paid ([Bundled](/workers/platform/pricing/#bundled-usage-model) and [Unbound](/workers/platform/pricing/#unbound-usage-model))      |
+| Feature                                                                         | Workers Free      | Workers Paid ([Bundled](/workers/platform/pricing/#example-pricing-bundled-usage-model) and [Unbound](/workers/platform/pricing/#example-pricing-unbound-usage-model))      |
 | ------------------------------------------------------------------------------- | --------- | --------- |
-| [Subrequests](#subrequests)                                                     | 50/request| 50/request ([Bundled](/workers/platform/pricing/#bundled-usage-model)),<br> 1000/request ([Unbound](/workers/platform/pricing/#unbound-usage-model), [Standard](/workers/platform/pricing/#standard-usage-model))|
+| [Subrequests](#subrequests)                                                     | 50/request| 50/request ([Bundled](/workers/platform/pricing/#example-pricing-bundled-usage-model)),<br> 1000/request ([Unbound](/workers/platform/pricing/#example-pricing-unbound-usage-model), [Standard](/workers/platform/pricing/#example-pricing-standard-usage-model))|
 | [Simultaneous outgoing<br/>connections/request](#simultaneous-open-connections) | 6         | 6         |
 | [Environment variables](#environment-variables)                                 | 64/Worker | 128/Worker |
 | [Environment variable<br/>size](#environment-variables)                         | 5 KB      | 5 KB      |
@@ -36,7 +37,7 @@ Request headers observe a total limit of 32 KB, but each header is limited to 16
 
 Cloudflare has network-wide limits on the request body size. This limit is tied to your Cloudflare account's plan, which is separate from your Workers plan. When the request body size of your `POST`/`PUT`/`PATCH` requests exceed your plan's limit, the request is rejected with a `(413) Request entity too large` error.
 
-Cloudflare Enterprise customers may contact their account team or [Cloudflare Support](/support/troubleshooting/general-troubleshooting/contacting-cloudflare-support/) to have a request body limit beyond 500 MB.
+Cloudflare Enterprise customers may contact their account team or [Cloudflare Support](/support/contacting-cloudflare-support/) to have a request body limit beyond 500 MB.
 
 {{<table-wrap>}}
 
@@ -61,11 +62,11 @@ Cloudflare does not enforce response limits, but cache limits for [Cloudflare's 
 
 {{<table-wrap>}}
 
-| Feature                     | Free                                       | [Bundled Usage Model](/workers/platform/pricing/#bundled-usage-model) | [Unbound Usage Model](/workers/platform/pricing/#unbound-usage-model)|
+| Feature                     | Free                                       | [Bundled Usage Model](/workers/platform/pricing/#example-pricing-bundled-usage-model) | [Unbound Usage Model](/workers/platform/pricing/#example-pricing-unbound-usage-model)|
 | --------------------------- | ------------------------------------------ | ------------------------------------------- | ------------------------------------------- | --- |
 | [Request](#request)         | 100,000 requests/day<br/>1000 requests/min | none                                        | none                                        |
 | [Worker memory](#memory)    | 128 MB                                     | 128 MB                                      | 128 MB                                      |
-| [CPU time](#cpu-time) | 10 ms                                      | 50 ms HTTP request <br/> 50 ms [Cron Trigger](/workers/configuration/cron-triggers/) | 30 s HTTP request <br/> 15 min [Cron Trigger](/workers/configuration/cron-triggers/) <br/> 15 min [Queue Consumer](/queues/platform/javascript-apis/#consumer) |     |
+| [CPU time](#cpu-time) | 10 ms                                      | 50 ms HTTP request <br/> 50 ms [Cron Trigger](/workers/configuration/cron-triggers/) | 30 s HTTP request <br/> 15 min [Cron Trigger](/workers/configuration/cron-triggers/) <br/> 15 min [Queue Consumer](/queues/reference/javascript-apis/#consumer) |     |
 | [Duration](#duration)       |   None                                         |  none                                           | none                                  |
 
 {{</table-wrap>}}
@@ -91,11 +92,11 @@ On the Unbound billing model, scheduled Workers ([Cron Triggers](/workers/config
 
 {{<table-wrap>}}
 
-| Feature                       | Free   | Bundled |
-| ----------------------------- | ------ | ------- |
-| [Max object size](#cache-api-limits) | 512 MB | 512 MB  |
-| [Calls/request](#cache-api-limits)   | 50     | 50      |
-| [Storage/request](#cache-api-limits) | 5 GB   | 5 GB    |
+| Feature                       | Workers Free  | [Bundled](/workers/platform/pricing/#example-pricing-bundled-usage-model) | [Unbound](/workers/platform/pricing/#example-pricing-unbound-usage-model) | [Standard](/workers/platform/pricing/#example-pricing-standard-usage-model)  |
+| ----------------------------- | ------------- | ------- | ------- | ------- |
+| [Max object size](#cache-api-limits) | 512 MB | 512 MB  | 512 MB  | 512 MB  |
+| [Calls/request](#cache-api-limits)   | 50     | 50      | 1,000   | 1,000   |
+| [Storage/request](#cache-api-limits) | 5 GB   | 5 GB    | 5 GB    | 5 GB    |
 
 {{</table-wrap>}}
 
@@ -215,7 +216,18 @@ Each environment variable has a size limitation of 5 KB.
 
 ## Worker size
 
-A Worker can be up to 10 MB in size after compression on the Workers Paid plan, and up to 1 MB on the Workers Free plan.
+A Worker can be up to 10 MB in size _after compression_ on the Workers Paid plan, and up to 1 MB on the Workers Free plan.
+
+You can assess the size of your Worker bundle after compression by performing a dry-run with `wrangler` and reviewing the final compressed (`gzip`) size output by `wrangler`:
+
+```sh
+$ wrangler deploy --outdir bundled/ --dry-run
+
+# Output will resemble the below:
+Total Upload: 259.61 KiB / gzip: 47.23 KiB
+```
+
+Note that larger Worker bundles can impact the start-up time of the Worker, as the Worker needs to be loaded into memory. You should consider removing unnecessary dependencies and/or using [Workers KV](/kv/), a [D1 database](/d1/) or [R2](/r2/) to store configuration files, static assets and binary data instead of attempting to bundle them within your Worker code. 
 
 {{<render file="_limits_increase.md">}}
 
@@ -255,17 +267,17 @@ When configuring [routing](/workers/configuration/routing/), the maximum number 
 
 ---
 
-## Image Resizing with Workers 
+## Image Resizing with Workers
 
-When using Image Resizing with Workers, refer to [Image Resizing documentation](/images/image-resizing/format-limitations/#limits-per-format) for more information on the applied limits.
+When using Image Resizing with Workers, refer to [Image Resizing documentation](/images/transform-images/) for more information on the applied limits.
 
 ---
 
 ## Log size
 
-You can emit a maximum of 128 KB of data (across `console.log()` statements, exceptions, request metadata and headers) to the console for a single request. After you exceed this limit, further context associated with the request will not be recorded in logs, appear when tailing logs of your Worker, or within a [Tail Worker](/workers/observability/tail-workers/).
+You can emit a maximum of 128 KB of data (across `console.log()` statements, exceptions, request metadata and headers) to the console for a single request. After you exceed this limit, further context associated with the request will not be recorded in logs, appear when tailing logs of your Worker, or within a [Tail Worker](/workers/observability/logging/tail-workers/).
 
-Refer to the [Workers Trace Event Logpush documentation](/workers/observability/logpush/#limits) for information on the maximum size of fields sent to logpush destinations.
+Refer to the [Workers Trace Event Logpush documentation](/workers/observability/logging/logpush/#limits) for information on the maximum size of fields sent to logpush destinations.
 
 ## Related resources
 

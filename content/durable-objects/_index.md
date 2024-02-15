@@ -27,7 +27,7 @@ Use Durable Objects to build collaborative editing tools, interactive chat, mult
 
 ## Features
 
-{{<feature header="In-memory state" href="/durable-objects/learning/in-memory-state/">}}
+{{<feature header="In-memory state" href="/durable-objects/reference/in-memory-state/">}}
 
 Learn how Durable Objects coordinate connections among multiple clients or events.
 
@@ -85,9 +85,9 @@ Cloudflare R2 Storage allows developers to store large amounts of unstructured d
 
 {{<resource header="Pricing" href="/durable-objects/platform/pricing/" icon="reference-architecture">}}Learn about Durable Objects pricing.{{</resource>}}
 
-{{<resource header="Storage options" href="/workers/learning/storage-options/" icon="documentation-clipboard">}}Learn more about storage and database options you can build with Workers.{{</resource>}}
+{{<resource header="Storage options" href="/workers/platform/storage-options/" icon="documentation-clipboard">}}Learn more about storage and database options you can build with Workers.{{</resource>}}
 
-{{<resource header="Developer Discord" href="https://discord.gg/cloudflaredev" icon="logo-Discord">}}Connect with the Workers community on Discord to ask questions, show what you are building, and discuss the platform with other developers.{{</resource>}}
+{{<resource header="Developer Discord" href="https://discord.cloudflare.com" icon="logo-Discord">}}Connect with the Workers community on Discord to ask questions, show what you are building, and discuss the platform with other developers.{{</resource>}}
 
 {{<resource header="@CloudflareDev" href="https://twitter.com/cloudflaredev" icon="twitter">}}Follow @CloudflareDev on Twitter to learn about product announcements, and what is new in Cloudflare Developer Platform.{{</resource>}}
  

@@ -7,7 +7,7 @@ meta:
 ---
 
 # Configure `wrangler.toml`
-  
+
 Wrangler optionally uses a `wrangler.toml` configuration file to customize the development and deployment setup for a Worker.
 
 {{<Aside type="warning">}}
@@ -128,7 +128,7 @@ After you have opted into the [Workers Standard](/workers/platform/pricing/#work
 
 - `node_compat` {{<type>}}boolean{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
-  - Add polyfills for node builtin modules and globals. Refer to [node compatibility](#node-compatibility).
+  - Add polyfills for Node.js built-in modules and globals. Refer to [Node compatibility](#node-compatibility).
 
 - `send_metrics` {{<type>}}boolean{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
@@ -181,6 +181,10 @@ Non-inheritable keys are configurable at the top-level, but cannot be inherited 
 - `services` {{<type>}}object{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
   - A list of service bindings that your Worker should be bound to. Refer to [service bindings](#service-bindings).
+
+- `tail_consumers` {{<type>}}object{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
+
+  - A list of the Tail Workers your Worker sends data to. Refer to [Tail Workers](/workers/observability/logging/tail-workers/).
 
 {{</definitions>}}
 
@@ -343,9 +347,9 @@ watch_dir = "build_watch_dir"
 
 ## Limits
 
-You can impose limits on your Worker's behavior at runtime. Limits are only supported for the [Standard Usage Model](/workers/platform/pricing/#standard-usage-model). Limits are only enforced when deployed to Cloudflare's network, not in local development. The CPU limit can be set to a maximum of 30,000 milliseconds (30 seconds).
+You can impose limits on your Worker's behavior at runtime. Limits are only supported for the [Standard Usage Model](/workers/platform/pricing/#example-pricing-standard-usage-model). Limits are only enforced when deployed to Cloudflare's network, not in local development. The CPU limit can be set to a maximum of 30,000 milliseconds (30 seconds).
 
-Limits have some built-in flexibility to allow for cases where your Worker infrequently runs over the configured limit. If your Worker starts hitting the limit consistently, its execution will be terminated according to the limit configured. 
+Limits have some built-in flexibility to allow for cases where your Worker infrequently runs over the configured limit. If your Worker starts hitting the limit consistently, its execution will be terminated according to the limit configured.
 
 
 {{<definitions>}}
@@ -370,7 +374,7 @@ cpu_ms = 100
 
 ### D1 databases
 
-[D1](/d1/) is Cloudflare's serverless SQL database. A Worker can query a D1 database (or databases) by creating a [binding](/workers/configuration/bindings/) to each database for D1's [client API](/d1/platform/client-api/).
+[D1](/d1/) is Cloudflare's serverless SQL database. A Worker can query a D1 database (or databases) by creating a [binding](/workers/configuration/bindings/) to each database for D1's [client API](/d1/build-databases/query-databases/).
 
 To bind D1 databases to your Worker, assign an array of the below object to the `[[d1_databases]]` key.
 
@@ -388,7 +392,19 @@ To bind D1 databases to your Worker, assign an array of the below object to the 
 
   - The ID of the database. The database ID is available when you first use `wrangler d1 create` or when you call `wrangler d1 list`, and uniquely identifies your database.
 
+- `preview_database_id` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
+
+  - The preview ID of this D1 database. If provided, `wrangler dev` will use this ID. Otherwise, it will use `database_id`. This option is required when using `wrangler dev --remote`.
+
+  - The ID of the database. The database ID is available when you first use `wrangler d1 create` or when you call `wrangler d1 list`, and uniquely identifies your database.
+
 {{</definitions>}}
+
+{{<Aside type="note">}}
+
+When using Wrangler in the default local development mode, files will be written to local storage instead of the preview or production database. Refer to [Local development and testing](/workers/observability/local-development-and-testing) for more details.
+
+{{</Aside>}}
 
 Example:
 
@@ -396,10 +412,16 @@ Example:
 ---
 header: wrangler.toml
 ---
+d1_databases = [
+  { binding = "<BINDING_NAME>", database_name = "<DATABASE_NAME>", database_id = "<DATABASE_ID>" }
+]
+
+# or
+
 [[d1_databases]]
-binding = "PROD_DB"
-database_name = "test-db"
-database_id = "c020574a-5623-407b-be0c-cd192bab9545"
+binding = "<BINDING_NAME>"
+database_name = "<DATABASE_NAME>"
+database_id = "<DATABASE_ID>"
 ```
 
 ### Durable Objects
@@ -420,7 +442,7 @@ To bind Durable Objects to your Worker, assign an array of the below object to t
 
 - `script_name` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
-  - The script where the Durable Object is defined, if it is external to this Worker.
+  - The Worker script where the Durable Object is defined, if it is external to this Worker.
 
 - `environment` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
@@ -435,13 +457,20 @@ Example:
 header: wrangler.toml
 ---
 durable_objects.bindings = [
-  { name = "<TEST_OBJECT>", class_name = "<TEST_CLASS>" }
+  { name = "<BINDING_NAME>", class_name = "<CLASS_NAME>" }
 ]
+
+# or
+
+[[durable_objects.bindings]]
+name = "<BINDING_NAME>"
+class_name = "<CLASS_NAME>"
+
 ```
 
 #### Migrations
 
-When making changes to your Durable Object classes, you must perform a migration. Refer to [Durable Object migrations](/durable-objects/learning/durable-objects-migrations/).
+When making changes to your Durable Object classes, you must perform a migration. Refer to [Durable Object migrations](/durable-objects/reference/durable-objects-migrations/).
 
 {{<definitions>}}
 
@@ -470,10 +499,13 @@ Example:
 header: wrangler.toml
 ---
 [[migrations]]
-tag = ""
-new_classes = [""]
-renamed_classes = [{from = "DurableObjectExample", to = "UpdatedName" }]
-deleted_classes = ["DeprecatedClass"]
+tag = "v1" # Should be unique for each entry
+new_classes = ["DurableObjectExample"] # Array of new classes
+
+[[migrations]]
+tag = "v2"
+renamed_classes = [{from = "DurableObjectExample", to = "UpdatedName" }] # Array of rename directives
+deleted_classes = ["DeprecatedClass"] # Array of deleted class names
 ```
 
 ### KV namespaces
@@ -494,9 +526,15 @@ To bind KV namespaces to your Worker, assign an array of the below object to the
 
 - `preview_id` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
-  - The ID of the KV namespace used during `wrangler dev`.
+  - The preview ID of this KV namespace. This option is **required** when using `wrangler dev --remote` to develop against remote resources. If developing locally (without `--remote`), this is an optional field. `wrangler dev` will use this ID for the KV namespace. Otherwise, `wrangler dev` will use `id`.
 
 {{</definitions>}}
+
+{{<Aside type="note">}}
+
+When using Wrangler in the default local development mode, files will be written to local storage instead of the preview or production namespace. Refer to [Local development and testing](/workers/observability/local-development-and-testing) for more details.
+
+{{</Aside>}}
 
 Example:
 
@@ -505,13 +543,24 @@ Example:
 header: wrangler.toml
 ---
 kv_namespaces = [
-  { binding = "<TEST_NAMESPACE>", id = "<TEST_ID>" }
+  { binding = "<BINDING_NAME1>", id = "<NAMESPACE_ID1>" },
+  { binding = "<BINDING_NAME2>", id = "<NAMESPACE_ID2>"
 ]
+
+# or
+
+[[kv_namespaces]]
+binding = "<BINDING_NAME1>"
+id = "<NAMESPACE_ID1>"
+
+[[kv_namespaces]]
+binding = "<BINDING_NAME2>"
+id = "<NAMESPACE_ID2>"
 ```
 
 ### Queues
 
-[Queues](/queues/) is Cloudflare's global message queueing service, providing [guaranteed delivery](/queues/learning/delivery-guarantees/) and [message batching](/queues/learning/batching-retries/). To interact with a queue with Workers, you need a producer Worker to send messages to the queue and a consumer Worker to pull batches of messages out of the Queue. A single Worker can produce to and consume from multiple Queues.
+[Queues](/queues/) is Cloudflare's global message queueing service, providing [guaranteed delivery](/queues/reference/delivery-guarantees/) and [message batching](/queues/reference/batching-retries/). To interact with a queue with Workers, you need a producer Worker to send messages to the queue and a consumer Worker to pull batches of messages out of the Queue. A single Worker can produce to and consume from multiple Queues.
 
 To bind Queues to your producer Worker, assign an array of the below object to the `[[queues.producers]]` key.
 
@@ -534,8 +583,8 @@ Example:
 header: wrangler.toml
 ---
 [[queues.producers]]
-  queue = "my-queue"
-  binding = "MY_QUEUE"
+  binding = "<BINDING_NAME>"
+  queue = "<QUEUE_NAME>"
 ```
 
 To bind Queues to your consumer Worker, assign an array of the below object to the `[[queues.consumers]]` key.
@@ -556,7 +605,7 @@ To bind Queues to your consumer Worker, assign an array of the below object to t
 
 - `max_retries` {{<type>}}number{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
-  - The maximum number of retries for a message, if it fails or [`retryAll()`](/queues/platform/javascript-apis/#messagebatch) is invoked.
+  - The maximum number of retries for a message, if it fails or [`retryAll()`](/queues/reference/javascript-apis/#messagebatch) is invoked.
 
 - `dead_letter_queue` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
@@ -567,7 +616,7 @@ To bind Queues to your consumer Worker, assign an array of the below object to t
 - `max_concurrency` {{<type>}}number{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
   - The maximum number of concurrent consumers allowed to run at once. Leaving this unset will mean that the number of invocations will scale to the [currently supported maximum](/queues/platform/limits/).
-  - Refer to [Consumer concurrency](/queues/learning/consumer-concurrency/) for more information on how consumers autoscale, particularly when messages are retried.
+  - Refer to [Consumer concurrency](/queues/reference/consumer-concurrency/) for more information on how consumers autoscale, particularly when messages are retried.
 
 {{</definitions>}}
 
@@ -608,10 +657,11 @@ To bind R2 buckets to your Worker, assign an array of the below object to the `r
 
 - `preview_bucket_name` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
-  - The preview name of this R2 bucket used during `wrangler dev --remote`.
+  - The preview name of this R2 bucket. If provided, `wrangler dev` will use this name for the R2 bucket. Otherwise, it will use `bucket_name`. This option is required when using `wrangler dev --remote`.
+
 {{<Aside type="note">}}
 
-When using Wrangler in the default local development mode, files will be written to local storage instead of the preview or production bucket.
+When using Wrangler in the default local development mode, files will be written to local storage instead of the preview or production bucket. Refer to [Local development and testing](/workers/observability/local-development-and-testing) for more details.
 
 {{</Aside>}}
 
@@ -624,8 +674,19 @@ Example:
 header: wrangler.toml
 ---
 r2_buckets  = [
-  { binding = "<TEST_BUCKET>", bucket_name = "<TEST_BUCKET>"}
+  { binding = "<BINDING_NAME1>", bucket_name = "<BUCKET_NAME1>"},
+  { binding = "<BINDING_NAME2>", bucket_name = "<BUCKET_NAME2>"}
 ]
+
+# or
+
+[[r2_buckets]]
+binding = "<BINDING_NAME1>"
+bucket_name = "<BUCKET_NAME1>"
+
+[[r2_buckets]]
+binding = "<BINDING_NAME2>"
+bucket_name = "<BUCKET_NAME2>"
 ```
 
 ### Vectorize indexes
@@ -652,10 +713,15 @@ Example:
 ---
 header: wrangler.toml
 ---
+vectorize  = [
+  { binding = "<BINDING_NAME>", index_name = "<INDEX_NAME>"}
+]
+
+# or
 
 [[vectorize]]
-binding = "<INDEX_NAME>"
-index_name = "<YOUR_INDEX>"
+binding = "<BINDING_NAME>"
+index_name = "<INDEX_NAME>"
 ```
 
 ### Service bindings
@@ -668,15 +734,11 @@ To bind other Workers to your Worker, assign an array of the below object to the
 
 - `binding` {{<type>}}string{{</type>}} {{<prop-meta>}}required{{</prop-meta>}}
 
-  - The binding name used to refer to the bound service.
+  - The binding name used to refer to the bound Worker.
 
 - `service` {{<type>}}string{{</type>}} {{<prop-meta>}}required{{</prop-meta>}}
 
-  - The name of the service.
-
-- `environment` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
-
-  -  The environment of the service (for example, `production`, `staging`, etc). Refer to [Environments](/workers/wrangler/environments/).
+  - The name of the Worker.
 
 {{</definitions>}}
 
@@ -687,8 +749,14 @@ Example:
 header: wrangler.toml
 ---
 services = [
-  { binding = "<TEST_BINDING>", service = "<TEST_WORKER>" }
+  { binding = "<BINDING_NAME>", service = "<WORKER_NAME>" }
 ]
+
+# or
+
+[[services]]
+binding = "<BINDING_NAME>"
+service = "<WORKER_NAME>"
 ```
 
 ### Analytics Engine Datasets
@@ -715,6 +783,10 @@ Example:
 ---
 filename: wrangler.toml
 ---
+analytics_engine_datasets = { binding = "<BINDING_NAME>", dataset = "<DATASET_NAME>" }
+
+# or
+
 [[analytics_engine_datasets]]
 binding = "<BINDING_NAME>"
 dataset = "<DATASET_NAME>"
@@ -745,8 +817,19 @@ Example of a `wrangler.toml` configuration that includes an mTLS certificate bin
 header: wrangler.toml
 ---
 mtls_certificates = [
-    { binding = "<BINDING_NAME>", certificate_id = "<CERTIFICATE_ID>" }
+    { binding = "<BINDING_NAME1>", certificate_id = "<CERTIFICATE_ID1>" },
+    { binding = "<BINDING_NAME2>", certificate_id = "<CERTIFICATE_ID2>" }
 ]
+
+# or
+
+[[mtls_certificates]]
+binding = "<BINDING_NAME1>"
+certificate_id = "<CERTIFICATE_ID1>"
+
+[[mtls_certificates]]
+binding = "<BINDING_NAME2>"
+certificate_id = "<CERTIFICATE_ID2>"
 ```
 
 mTLS certificate bindings can then be used at runtime to communicate with secured origins via their [`fetch` method](/workers/runtime-apis/mtls).
@@ -758,17 +841,52 @@ mTLS certificate bindings can then be used at runtime to communicate with secure
 
 {{<definitions>}}
 
-- `type` {{<type>}}string{{</type>}} {{<prop-meta>}}required{{</prop-meta>}}
+- `name` {{<type>}}string{{</type>}} {{<prop-meta>}}required{{</prop-meta>}}
 
-  - Defines that you are creating bindings for sending emails from your Worker.
+  - The binding name.
 
-- `attribute` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
+- `destination_address` {{<type>}}string{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
 
-  - Defines the type of binding. Refer to [Types of bindings](/email-routing/email-workers/send-email-workers/#types-of-bindings) for more information.
+  - The [chosen email address](/email-routing/email-workers/send-email-workers/#types-of-bindings) you send emails to.
+
+- `allowed_destination_addresses` {{<type>}}string[]{{</type>}} {{<prop-meta>}}optional{{</prop-meta>}}
+
+  - The [allowlist of email addresses](/email-routing/email-workers/send-email-workers/#types-of-bindings) you send emails to.
 
 {{</definitions>}}
 
 {{<render file="_types-bindings.md" productFolder="/email-routing/">}}
+
+### AI
+
+[Workers AI](/workers-ai/) allows you to run machine learning models, on the Cloudflare network, from your own code –
+whether that be from Workers, Pages, or anywhere via REST API.
+
+{{<render file="_ai-local-usage-charges.md" productFolder="workers">}}
+
+Unlike other bindings, this binding is limited to one AI binding per Worker project.
+
+{{<definitions>}}
+
+- `binding` {{<type>}}string{{</type>}} {{<prop-meta>}}required{{</prop-meta>}}
+
+  - The binding name.
+
+{{</definitions>}}
+
+Example:
+
+```toml
+---
+filename: wrangler.toml
+---
+ai = { binding = "<AI>" }
+
+# or
+
+[ai]
+binding = "AI" # available in your Worker code on `env.AI`
+```
 
 ## Bundling
 
@@ -874,7 +992,7 @@ SECRET_KEY=value
 
 ## Node compatibility
 
-If you depend on Node.js APIs, either directly in your own code or via a library you depend on, you can either use a subset of Node.js APIs available directly in the Workers runtime, or add polyfills for a subset of node.js APIs to your own code.
+If you depend on Node.js APIs, either directly in your own code or via a library you depend on, you can either use a subset of Node.js APIs available directly in the Workers runtime, or add polyfills for a subset of Node.js APIs to your own code.
 
 ### Use runtime APIs directly
 
@@ -889,7 +1007,7 @@ compatibility_flags = [ "nodejs_compat" ]
 
 ### Add polyfills using Wrangler
 
-Add polyfills for subset of Node.js APIs to your Worker by adding the `node_compat` key to your `wrangler.toml` or by passing the `--node-compat` flag to `wrangler`.
+Add polyfills for a subset of Node.js APIs to your Worker by adding the `node_compat` key to your `wrangler.toml` or by passing the `--node-compat` flag to `wrangler`.
 
 ```toml
 ---
